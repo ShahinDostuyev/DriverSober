@@ -12,9 +12,8 @@ import * as Yup from "yup";
 import PrimaryButton from "../../components/primaryButton";
 import axios from "axios";
 
-import { useDispatch } from 'react-redux';
+import { useDispatch } from "react-redux";
 import { setUserInfo } from "../../redux/actions";
-
 
 // Function to check password requirements
 const checkPasswordRequirements = (password) => {
@@ -42,6 +41,7 @@ const checkPasswordRequirements = (password) => {
 
 // Define validation schema with Yup
 const registerSchema = Yup.object().shape({
+  // Existing fields
   name: Yup.string().required("Name is required"),
   surname: Yup.string().required("Surname is required"),
   email: Yup.string()
@@ -55,43 +55,43 @@ const registerSchema = Yup.object().shape({
     .required("Contact number is required")
     .matches(/^[0-9]{11}$/, "Invalid contact number"),
   password: Yup.string().required("Password is required"),
+
+  // New field for driver license number with regex validation
+  driverLicenseNumber: Yup.string()
+    .required("Driver license number is required")
+    .matches(/^[0-9]{6}$/, "Driver license number must be exactly 6 digits"),
 });
 
 const RegisterPage = ({ navigation }) => {
-  const [selectedRole, setselectedRole] = useState("Client");
-  console.log(selectedRole);
   const dispatch = useDispatch();
-
-  
-
 
   // Function to handle form submission
   const handleRegistration = async (values) => {
-    const { name, surname, email, contactNumber, password } = values;
+    const {
+      name,
+      surname,
+      email,
+      contactNumber,
+      password,
+      driverLicenseNumber,
+    } = values;
     const requestBody = {
       name,
       surname,
       email,
       contactNumber,
       password,
+      driverLicenseNumber,
     };
     try {
       const response = await axios.post(
-        `https://soberlift.onrender.com/api/${selectedRole}register`,
+        `https://soberlift.onrender.com/api/driverregister`,
         requestBody
       );
+      dispatch(setUserInfo(response.data.driver));
 
       // Handle success response
       console.log("Registration successful:", response.data);
-      const userInfo = {
-        name,
-        surname,
-        email,
-        contactNumber,
-        role: selectedRole,
-      };
-      dispatch(setUserInfo(userInfo));
-
     } catch (error) {
       console.error("Registration failed:", error);
     }
@@ -107,54 +107,6 @@ const RegisterPage = ({ navigation }) => {
       <View style={styles.rootContainer}>
         <View style={styles.formContainer}>
           <Text style={styles.title}>Register</Text>
-          <View style={styles.roleSelector}>
-            <TouchableOpacity
-              style={{
-                width: "50%",
-                height: 40,
-                backgroundColor: selectedRole == "Client" ? "blue" : "white",
-                borderRadius: 15,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-              onPress={() => {
-                setselectedRole("Client");
-              }}
-            >
-              <Text
-                style={{
-                  color: selectedRole == "Client" ? "white" : "black",
-                  fontSize: 18,
-                  fontWeight: "700",
-                }}
-              >
-                Client
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={{
-                width: "50%",
-                height: 40,
-                backgroundColor: selectedRole == "Driver" ? "blue" : "white",
-                borderRadius: 15,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-              onPress={() => {
-                setselectedRole("Driver");
-              }}
-            >
-              <Text
-                style={{
-                  color: selectedRole == "Driver" ? "white" : "black",
-                  fontSize: 18,
-                  fontWeight: "700",
-                }}
-              >
-                Driver
-              </Text>
-            </TouchableOpacity>
-          </View>
 
           {/* Formik component for handling forms */}
           <Formik
@@ -164,6 +116,7 @@ const RegisterPage = ({ navigation }) => {
               email: "",
               contactNumber: "",
               password: "",
+              driverLicenseNumber: "", // Initialize driver license number field
             }}
             validationSchema={registerSchema}
             onSubmit={handleRegistration}
@@ -178,6 +131,8 @@ const RegisterPage = ({ navigation }) => {
               isValid, // Formik prop to check if the form is valid
             }) => (
               <View style={{ width: "100%", alignItems: "center" }}>
+                {/* Existing input fields */}
+                {/* Name input */}
                 <TextInput
                   style={styles.input}
                   placeholder="Name"
@@ -189,6 +144,7 @@ const RegisterPage = ({ navigation }) => {
                   <Text style={styles.errorText}>{errors.name}</Text>
                 )}
 
+                {/* Surname input */}
                 <TextInput
                   style={styles.input}
                   placeholder="Surname"
@@ -200,6 +156,7 @@ const RegisterPage = ({ navigation }) => {
                   <Text style={styles.errorText}>{errors.surname}</Text>
                 )}
 
+                {/* Contact number input */}
                 <TextInput
                   style={styles.input}
                   placeholder="Contact number"
@@ -212,6 +169,7 @@ const RegisterPage = ({ navigation }) => {
                   <Text style={styles.errorText}>{errors.contactNumber}</Text>
                 )}
 
+                {/* Email input */}
                 <TextInput
                   style={styles.input}
                   placeholder="example@example.com"
@@ -235,6 +193,20 @@ const RegisterPage = ({ navigation }) => {
                 />
                 {touched.password && errors.password && (
                   <Text style={styles.errorText}>{errors.password}</Text>
+                )}
+
+                {/* Driver license number input */}
+                <TextInput
+                  style={styles.input}
+                  placeholder="Driver License Number"
+                  onChangeText={handleChange("driverLicenseNumber")}
+                  onBlur={handleBlur("driverLicenseNumber")}
+                  value={values.driverLicenseNumber}
+                />
+                {touched.driverLicenseNumber && errors.driverLicenseNumber && (
+                  <Text style={styles.errorText}>
+                    {errors.driverLicenseNumber}
+                  </Text>
                 )}
 
                 {/* Display password requirements */}
@@ -274,7 +246,6 @@ const RegisterPage = ({ navigation }) => {
     </ImageBackground>
   );
 };
-
 // Styles
 const styles = StyleSheet.create({
   rootContainer: {
@@ -293,17 +264,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     marginBottom: 16,
-  },
-  roleSelector: {
-    width: "85%",
-    height: 50,
-    marginVertical: 20,
-    borderWidth: 0.5,
-    borderRadius: 15,
-    backgroundColor: "white",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 5,
   },
   input: {
     height: 40,

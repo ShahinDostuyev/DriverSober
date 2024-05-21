@@ -52,9 +52,8 @@ const loginSchema = Yup.object().shape({
 
 // Login component
 const LoginPage = ({ navigation }) => {
-  const [selectedRole, setselectedRole] = useState("Client");
   const dispatch = useDispatch();
-  console.log(selectedRole);
+
   // Function to handle form submission
   const handleLogin = async (values) => {
     const { email, password } = values;
@@ -64,12 +63,12 @@ const LoginPage = ({ navigation }) => {
     };
     try {
       const response = await axios.post(
-        `https://soberlift.onrender.com/api/${selectedRole}login`,
+        `https://soberlift.onrender.com/api/driverlogin`,
         requestBody
       );
-      dispatch(setUserInfo(response.data));
+      dispatch(setUserInfo(response.data.driver));
       // Handle success response
-      console.log("Login successful:", response.data);
+      console.log("Login successful:", response.data.driver);
     } catch (error) {
       console.error("Login failed:", error);
     }
@@ -85,54 +84,6 @@ const LoginPage = ({ navigation }) => {
       <View style={styles.rootContainer}>
         <View style={styles.formContainer}>
           <Text style={styles.title}>Login</Text>
-          <View style={styles.roleSelector}>
-            <TouchableOpacity
-              style={{
-                width: "50%",
-                height: 40,
-                backgroundColor: selectedRole == "Client" ? "blue" : "white",
-                borderRadius: 15,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-              onPress={() => {
-                setselectedRole("Client");
-              }}
-            >
-              <Text
-                style={{
-                  color: selectedRole == "Client" ? "white" : "black",
-                  fontSize: 18,
-                  fontWeight: "700",
-                }}
-              >
-                Client
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={{
-                width: "50%",
-                height: 40,
-                backgroundColor: selectedRole == "Driver" ? "blue" : "white",
-                borderRadius: 15,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-              onPress={() => {
-                setselectedRole("Driver");
-              }}
-            >
-              <Text
-                style={{
-                  color: selectedRole == "Driver" ? "white" : "black",
-                  fontSize: 18,
-                  fontWeight: "700",
-                }}
-              >
-                Driver
-              </Text>
-            </TouchableOpacity>
-          </View>
 
           {/* Formik component for handling forms */}
           <Formik
@@ -236,17 +187,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     marginBottom: 16,
-  },
-  roleSelector: {
-    width: "85%",
-    height: 50,
-    marginVertical: 20,
-    borderWidth: 0.5,
-    borderRadius: 15,
-    backgroundColor: "white",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 5,
   },
   input: {
     height: 40,

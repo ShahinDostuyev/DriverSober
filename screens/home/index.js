@@ -5,17 +5,25 @@ import * as Location from "expo-location";
 import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
 import { Entypo } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useSelector } from "react-redux";
 
-function HomeScreen() {
-  const [location, setLocation] = useState({
-    longitude: 30.636389,
-    latitude: 38.320278,
-  });
+function HomeScreen({ navigation }) {
+  const driverId = useSelector((state) => state.user.user._id);
+
+  const [location, setLocation] = useState(null);
   const [region, setRegion] = useState(null);
   const [available, setavailibility] = useState(false);
 
-  const handleAvailibility = () => {
-    setavailibility(!available);
+  const handleAvailibility = async () => {
+    try {
+      const response = await axios.put(
+        `https://soberlift.onrender.com/api/makeactiveinactive/${driverId}`
+      );
+      console.log("Written to db: ", response.data.status);
+      setavailibility(response.data.status);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   useEffect(() => {
@@ -31,6 +39,21 @@ function HomeScreen() {
         latitude: currentLocation.coords.latitude,
         longitude: currentLocation.coords.longitude,
       });
+      // try {
+      //   const response = await axios.put(
+      //     `https://soberlift.onrender.com/api/updateLocation/${driverId}`,
+      //     {
+      //       location: {
+      //         longitude: currentLocation.coords.longitude,
+      //         latitude: currentLocation.coords.latitude,
+      //       },
+      //     }
+      //   );
+      //   console.log("Location updated with status: ", response.data.status);
+      //   setavailibility(response.data.status);
+      // } catch (err) {
+      //   console.error(err);
+      // }
       setRegion({
         latitude: currentLocation.coords.latitude,
         longitude: currentLocation.coords.longitude,
@@ -39,37 +62,87 @@ function HomeScreen() {
       });
     })();
   }, []);
-  console.log(region);
+  console.log(location);
+
+  useEffect(() => {
+    const fetchDriverStatus = async () => {
+      try {
+        const response = await axios.post(
+          `https://soberlift.onrender.com/api/isActive`,
+          {
+            driverId: String(driverId),
+          }
+        );
+        setavailibility(response.data.status);
+        console.log(available);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    fetchDriverStatus();
+  }, []);
+
+  const onUserLocationChange = async (event) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    console.log("User location changed");
+    // Update the car and set it to active
+    try {
+      const newLocationData = {
+        latitude,
+        longitude,
+      };
+      const newLocation = await axios.put(
+        `https://soberlift.onrender.com/api/updateLocation/${driverId}`,
+        {
+          newLocationData,
+        }
+      );
+      setLocation(newLocation);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <>
       <MapView
         style={styles.map}
-        initialRegion={{
-            latitude: 37,
-            longitude: 38,
-            latitudeDelta: 0.015,
-            longitudeDelta: 0.04,
-          }}
+        initialRegion={region}
+        // onUserLocationChange={onUserLocationChange}
         showsUserLocation={true}
       />
       <View style={styles.bottomContainer}>
         <Pressable
           style={[
             styles.goButton,
-            { backgroundColor: available ? "red" : "blue" },
+            { backgroundColor: available === "active" ? "red" : "blue" },
           ]}
           onPress={handleAvailibility}
         >
-          <Text style={styles.goText}>{available ? "END" : "GO"}</Text>
+          <Text style={styles.goText}>
+            {available === "active" ? "END" : "GO"}
+          </Text>
         </Pressable>
 
-        <Pressable>
+        <Pressable
+          onPress={() => {
+            navigation.navigate("Profile");
+          }}
+        >
           <MaterialIcons name="account-circle" size={28} color="black" />
         </Pressable>
         <Text
-          style={[styles.bottomText, { color: available ? "blue" : "red" }]}
-        >{`You are ${available ? "Online" : "Offline"}`}</Text>
-        <Pressable>
+          style={[
+            styles.bottomText,
+            { color: available === "active" ? "green" : "red" },
+          ]}
+        >{`You are ${available === "active" ? "Online" : "Offline"}`}</Text>
+        <Pressable
+          onPress={() => {
+            navigation.navigate("Requests");
+          }}
+        >
           <Entypo name="address" size={28} color="black" />
         </Pressable>
       </View>

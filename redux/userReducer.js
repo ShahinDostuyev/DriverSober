@@ -1,8 +1,8 @@
 // userReducer.js
-import { CLEAR_USER, SET_USER_INFO } from "./actions";
+import { CLEAR_USER, SET_USER_INFO, UPDATE_USER } from "./actions";
 
 const initialState = {
-  user: {},
+  user: null,
 };
 
 const userReducer = (state = initialState, action) => {
@@ -11,6 +11,14 @@ const userReducer = (state = initialState, action) => {
       return {
         ...state,
         user: action.payload,
+      };
+    case UPDATE_USER:
+      return {
+        ...state,
+        user: {
+          ...state.user,
+          ...action.payload,
+        },
       };
     case CLEAR_USER:
       return {
