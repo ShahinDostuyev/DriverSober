@@ -9,20 +9,50 @@ import PrimaryButton from "../../components/primaryButton";
 import VerticalLine from "../../components/verticalLine";
 import { MaterialIcons } from "@expo/vector-icons";
 import Colors from "../../constants/Colors";
+import RateClient from "../../components/rate";
 
 function RideScreen({ navigation, route }) {
-  const isTestTry = false;
-  const { ride } = route.params;
+  const { request, ride } = route.params;
   const driverId = useSelector((state) => state.user.user._id);
-
-  const origin = ride.pickupLocation;
-  const destination = ride.dropOffLocation;
 
   const [location, setLocation] = useState(null);
   const [region, setRegion] = useState(null);
-  const [available, setavailibility] = useState(false);
-  const [rideInfo, setrideInfo] = useState(null);
-  console.log("Location : ", location);
+  const [rideInfo, setRideInfo] = useState(null);
+  const [pickedUp, setPickedUp] = useState(false);
+  const [finished, setFinished] = useState(true);
+  console.log(rideInfo);
+
+  const [origin, setOrigin] = useState(request.pickupLocation);
+  const [destination, setDestination] = useState(request.dropOffLocation);
+
+  const handleRideCancel = async (rideId) => {
+    try {
+      const response = await axios.put(
+        `https://soberlift.onrender.com/api/cancelRide/${ride._id}`
+      );
+      console.log("Ride canceled");
+      navigation.navigate("Home");
+    } catch (e) {
+      console.error("soberlift : ", e);
+    }
+  };
+  const handlePickUp = () => {
+    console.log("Arrived at the pickup location");
+    setPickedUp(true);
+  };
+
+  const finishRide = async () => {
+    console.log("Arrived at the destination location");
+    try {
+      const response = await axios.put(
+        `https://soberlift.onrender.com/api/finishRide/${ride._id}`
+      );
+      console.log("Ride finished, status changed to: ", response.data.status);
+      setFinished(true);
+    } catch (e) {
+      console.error("Ride can not be finished : ", e);
+    }
+  };
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -37,25 +67,18 @@ function RideScreen({ navigation, route }) {
           latitude: currentLocation.coords.latitude,
           longitude: currentLocation.coords.longitude,
         };
-        console.log(location, driverId);
         const newLocation = await axios.put(
           `https://soberlift.onrender.com/api/updateLocation/${driverId}`,
           {
             location,
           }
         );
-        // console.log("User location changed");
       } catch (e) {
         console.error("soberlift : ", e);
       }
-      if (isTestTry) {
-        setLocation({
-          latitude: 37.45,
-          longitude: -122.3001,
-        });
-      } else {
-        setLocation(location);
-      }
+
+      setLocation(location);
+
       setRegion({
         latitude: currentLocation.coords.latitude,
         longitude: currentLocation.coords.longitude,
@@ -66,19 +89,20 @@ function RideScreen({ navigation, route }) {
   }, []);
 
   useEffect(() => {
-    const calculateDistance = () => {
-      axios
-        .get(
-          `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.latitude},${origin.longitude}&destinations=${destination.latitude},${destination.longitude}&key=AIzaSyCs4CFoDHas00xgk0CLFRxjLloQbbtzDM0`
-        )
-        .then((response) => {
-          setrideInfo(response.data.rows[0].elements[0]);
-        })
-        .catch((error) => {
-          console.error("google api error: ", error.message);
-        });
-    };
-    calculateDistance();
+    
+      const calculateDistance = () => {
+        axios
+          .get(
+            `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.latitude},${origin.longitude}&destinations=${destination.latitude},${destination.longitude}&key=AIzaSyCs4CFoDHas00xgk0CLFRxjLloQbbtzDM0`
+          )
+          .then((response) => {
+            setRideInfo(response.data.rows[0].elements[0]);
+          })
+          .catch((error) => {
+            console.error("google api error: ", error.message);
+          });
+      };
+      calculateDistance();
   }, []);
 
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -97,11 +121,6 @@ function RideScreen({ navigation, route }) {
     return distance;
   };
 
-  const handleComplete = () => {
-    console.log("Arrived at the pickup location");
-    // Add your code to handle when the driver reaches the pickup location
-  };
-
   const onUserLocationChange = async (event) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     // Update the car and set it to active
@@ -117,105 +136,193 @@ function RideScreen({ navigation, route }) {
         }
       );
       setLocation(location);
-      // console.log("User location changed");
     } catch (e) {
       console.error("soberlift error: ", e);
     }
-    const distanceToPickup = calculateDistance(
-      latitude,
-      longitude,
-      origin.latitude,
-      origin.longitude
-    );
 
     const threshold = 500; // Define a threshold distance in meters
 
-    if (distanceToPickup <= threshold) {
-      handleComplete();
+    if (!pickedUp) {
+      const distanceToPickup = calculateDistance(
+        latitude,
+        longitude,
+        origin.latitude,
+        origin.longitude
+      );
+      if (distanceToPickup <= threshold) {
+        handlePickUp();
+      }
+    }
+
+    if (pickedUp && !finished) {
+      const distanceToDropOff = calculateDistance(
+        latitude,
+        longitude,
+        destination.latitude,
+        destination.longitude
+      );
+      if (distanceToDropOff <= threshold) {
+        finishRide();
+      }
     }
   };
+
+  const handleRatingCancel = () => {
+    navigation.navigate("Home");
+  };
+
+  const handleRatingSubmit = (rating) => {
+    axios
+      .post(
+        `https://soberlift.onrender.com/api/rateClient/${request.clientId}`,
+        {
+          rating,
+        }
+      )
+      .then((response) => {
+        console.log("Rating added to database: ", response.data);
+      })
+      .catch((error) => {
+        console.error(error.message);
+        console.log("Rating can not added");
+      });
+    // Request to add rating to Client
+    console.log("Rating by driver: ", rating);
+
+    navigation.navigate("Home");
+  };
+
   return (
     <>
-      <MapView
-        style={styles.map}
-        initialRegion={region}
-        showsUserLocation={true}
-        onUserLocationChange={onUserLocationChange}
-      >
-        <MapViewDirections
-          origin={{
-            latitude: location ? location.latitude : origin.latitude,
-            longitude: location ? location.longitude : origin.longitude,
-          }}
-          destination={{
-            latitude: destination.latitude,
-            longitude: destination.longitude,
-          }}
-          apikey="AIzaSyCs4CFoDHas00xgk0CLFRxjLloQbbtzDM0"
-          strokeWidth={2}
+      {finished ? (
+        <RateClient
+          onCancel={handleRatingCancel}
+          onSubmit={handleRatingSubmit}
         />
-        <Marker
-          coordinate={{
-            latitude: destination.latitude,
-            longitude: destination.longitude,
-          }}
-          title="Destination"
-          description="Destination Location"
-        >
-          <Image
-            style={{ width: 40, height: 40, resizeMode: "contain" }}
-            source={require("../../assets/images/originLocation.png")}
-          />
-        </Marker>
-      </MapView>
-      <View style={styles.bottomContainer}>
-        <View style={styles.rideInfo}>
-          <View style={styles.clientInfo}>
-            <View style={styles.profilePhoto}>
-              <Image
-                style={{ width: 40, height: 40 }}
-                source={require("../../assets/favicon.png")}
-              />
+      ) : (
+        <>
+          <MapView
+            style={styles.map}
+            initialRegion={region}
+            showsUserLocation={true}
+            onUserLocationChange={onUserLocationChange}
+          >
+            {!pickedUp && (
+              <>
+                <MapViewDirections
+                  origin={{
+                    latitude: location ? location.latitude : origin.latitude,
+                    longitude: location ? location.longitude : origin.longitude,
+                  }}
+                  destination={{
+                    latitude: origin.latitude,
+                    longitude: origin.longitude,
+                  }}
+                  apikey="AIzaSyCs4CFoDHas00xgk0CLFRxjLloQbbtzDM0"
+                  strokeWidth={3}
+                  strokeColor="yellow"
+                />
+                <Marker
+                  coordinate={{
+                    latitude: origin.latitude,
+                    longitude: origin.longitude,
+                  }}
+                  title="Origin"
+                  description="Origin Location"
+                >
+                  <Image
+                    style={{ width: 40, height: 40, resizeMode: "contain" }}
+                    source={require("../../assets/images/originLocation.png")}
+                  />
+                </Marker>
+              </>
+            )}
+            <MapViewDirections
+              origin={{
+                latitude: pickedUp ? location.latitude : origin.latitude,
+                longitude: pickedUp ? location.longitude : origin.longitude,
+              }}
+              destination={{
+                latitude: destination.latitude,
+                longitude: destination.longitude,
+              }}
+              apikey="AIzaSyCs4CFoDHas00xgk0CLFRxjLloQbbtzDM0"
+              strokeWidth={1.5}
+            />
+
+            <Marker
+              coordinate={{
+                latitude: destination.latitude,
+                longitude: destination.longitude,
+              }}
+              title="Destination"
+              description="Destination Location"
+            />
+          </MapView>
+          <View style={styles.bottomContainer}>
+            <View style={styles.rideInfo}>
+              <View style={styles.clientInfo}>
+                <View style={styles.profilePhoto}>
+                  <Image
+                    style={{ width: 40, height: 40 }}
+                    source={require("../../assets/favicon.png")}
+                  />
+                </View>
+                <Text
+                  style={styles.username}
+                >{`${request.client.name} ${request.client.surname}`}</Text>
+                <View style={styles.ratingContainer}>
+                  <Text style={styles.rating}>
+                    {`${
+                      request.client.ratings?.length === 0
+                        ? "5"
+                        : request.client.rating
+                    }`}
+                  </Text>
+                  <MaterialIcons name="star" size={20} color="black" />
+                </View>
+              </View>
+              <View style={styles.calculatedRideDetails}>
+                <View style={styles.rideInfoWrapper}>
+                  <Text>Distance</Text>
+                  <Text style={styles.rideInfoText}>
+                    {rideInfo?.distance.text}
+                  </Text>
+                </View>
+
+                <VerticalLine />
+
+                <View style={styles.rideInfoWrapper}>
+                  <Text>Price</Text>
+                  <Text
+                    style={styles.rideInfoText}
+                  >{`${request.fare} TL`}</Text>
+                </View>
+
+                <VerticalLine />
+
+                <View style={styles.rideInfoWrapper}>
+                  <Text>Arrival</Text>
+                  <Text style={styles.rideInfoText}>
+                    {rideInfo?.duration.text}
+                  </Text>
+                </View>
+              </View>
             </View>
-            <Text
-              style={styles.username}
-            >{`${ride.user.name} ${ride.user.surname}`}</Text>
-            <View style={styles.ratingContainer}>
-              <Text style={styles.rating}>
-                {`${ride.user.rating.length === 0 ? "5" : ride.user.rating}`}
-              </Text>
-              <MaterialIcons name="star" size={20} color="black" />
-            </View>
+
+            <PrimaryButton
+              color="#e0e0e0"
+              textColor="black"
+              onPress={() => handleRideCancel(request._id)}
+            >
+              Cancel ride
+            </PrimaryButton>
+            <Pressable style={styles.chat}>
+              <MaterialIcons name="chat" size={40} color="black" />
+            </Pressable>
           </View>
-          <View style={styles.calculatedRideDetails}>
-            <View style={styles.rideInfoWrapper}>
-              <Text>Distance</Text>
-              <Text style={styles.rideInfoText}>{ride.distance}</Text>
-            </View>
-
-            <VerticalLine />
-
-            <View style={styles.rideInfoWrapper}>
-              <Text>Price</Text>
-              <Text style={styles.rideInfoText}>{`${ride.fare} TL`}</Text>
-            </View>
-
-            <VerticalLine />
-
-            <View style={styles.rideInfoWrapper}>
-              <Text>Arrival</Text>
-              <Text style={styles.rideInfoText}>{ride.duration}</Text>
-            </View>
-          </View>
-        </View>
-
-        <PrimaryButton color="#e0e0e0" textColor="black">
-          Cancel ride
-        </PrimaryButton>
-        <Pressable style={styles.chat}>
-          <MaterialIcons name="chat" size={44} color="black" />
-        </Pressable>
-      </View>
+        </>
+      )}
     </>
   );
 }
@@ -290,8 +397,8 @@ const styles = StyleSheet.create({
     top: -80,
     right: 20,
     backgroundColor: Colors.primaryYellow,
-    width: 70,
-    height: 70,
+    width: 60,
+    height: 60,
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",

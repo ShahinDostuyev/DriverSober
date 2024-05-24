@@ -1,79 +1,64 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View, Button } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import moment from "moment/moment";
 import { ScrollView } from "react-native-gesture-handler";
-
-const getRandomDateInLastMonth = () => {
-  const now = new Date();
-  const pastMonth = new Date(now.setMonth(now.getMonth() - 1));
-  const randomDate = new Date(
-    pastMonth.getTime() + Math.random() * (Date.now() - pastMonth.getTime())
-  );
-  return randomDate.toISOString();
-};
-
-const rides = [
-  {
-    user: { name: "Ahmet", surname: "Yılmaz", rating: 4.5 },
-    pickupLocation: {
-      address: "İstiklal Caddesi, Beyoğlu, İstanbul",
-      longitude: -122,
-      latitude: 37.5,
-    },
-    dropOffLocation: {
-      address: "Kadıköy, İstanbul",
-      longitude:-122.3,
-      latitude: 37.45,
-    },
-    distance: "10 km",
-    fare: "50",
-    duration: "20 mins",
-    status: "completed",
-    scheduledTime: getRandomDateInLastMonth(),
-  },
-  {
-    user: { name: "Mehmet", surname: "Kaya", rating: 4.8 },
-    pickupLocation: {
-      address: "Taksim Meydanı, Beyoğlu, İstanbul",
-      longitude: 30.23,
-      latitude: 38.12,
-    },
-    dropOffLocation: {
-      address: "Beşiktaş, İstanbul",
-      longitude: 30.12,
-      latitude: 39.34,
-    },
-    distance: "5 km",
-    fare: "30",
-    duration: "15 mins",
-    status: "completed",
-    scheduledTime: getRandomDateInLastMonth(),
-  },
-];
+import { useSelector } from "react-redux";
+import axios from "axios";
 
 function RequestsScreen({ navigation }) {
-  const [selectedRide, setSelectedRide] = useState(null);
-  const [requests, setRequests] = useState(null);
+  const user = useSelector((state) => state.user.user);
 
-  const handlePress = (ride) => {
-    if (selectedRide === ride) {
+  const [selectedRide, setSelectedRide] = useState(null);
+  const [requests, setRequests] = useState([]);
+  useEffect(() => {
+    const createRide = () => {
+      axios
+        .post(`https://soberlift.onrender.com/api/nearbyrequests`, {
+          driver: user,
+        })
+        .then((response) => {
+          setRequests(response.data);
+          console.log(requests);
+        })
+        .catch((error) => {
+          console.error(error.message);
+          console.log("something is wrong");
+        });
+    };
+    createRide();
+  }, []);
+
+  const handlePress = (request) => {
+    if (selectedRide === request) {
       setSelectedRide(null);
     } else {
-      setSelectedRide(ride);
+      setSelectedRide(request);
     }
   };
 
-  const handleAccept = (ride) => {
-    navigation.navigate("Ride", {
-      ride,
-    });
-    // Add your logic for accepting the ride
-  };
+  const handleAccept = (request) => {
+    const createRide = () => {
+      axios
+        .post(`https://soberlift.onrender.com/api/create-ride`, {
+          request,
+          driverId: user._id,
+        })
+        .then((response) => {
+          console.log("Created Ride: ", response.data);
+          navigation.navigate("Ride", {
+            request,
+            ride: response.data.ride,
+          });
+        })
+        .catch((error) => {
+          console.error(error.message);
+          console.log("Ride can not created");
+        });
+    };
+    createRide();
 
-  const handleDeny = (ride) => {
-    console.log(`Denied ride for ${ride.user.name}`);
-    // Add your logic for denying the ride
+    // Add your logic for accepting the request
   };
 
   return (
@@ -81,29 +66,29 @@ function RequestsScreen({ navigation }) {
       <Text style={styles.header}>Ride requests</Text>
       <ScrollView>
         <View style={styles.rideList}>
-          {rides.map((ride, index) => (
+          {requests.map((request, index) => (
             <View key={index}>
-              <Pressable onPress={() => handlePress(ride)}>
+              <Pressable onPress={() => handlePress(request)}>
                 <View style={styles.rideContainer}>
                   <View style={styles.rideLocations}>
                     <Text style={styles.pickupLocation}>
-                      {ride.pickupLocation.address}
+                      {request.pickupLocation.address}
                     </Text>
                     <Text style={styles.dropOffLocation}>
-                      {ride.dropOffLocation.address}
+                      {request.dropOffLocation.address}
                     </Text>
                     <Text style={styles.dateText}>
-                      {moment(ride.scheduledTime).format("LLL")}
+                      {moment(request.scheduledTime).format("LLL")}
                     </Text>
                   </View>
-                  <Text style={[styles.priceText]}>₺{ride.fare}</Text>
+                  <Text style={[styles.priceText]}>₺{request.fare}</Text>
                 </View>
               </Pressable>
-              {selectedRide === ride && (
+              {selectedRide === request && (
                 <View style={styles.buttonContainer}>
                   <Button
                     title="Accept"
-                    onPress={() => handleAccept(ride)}
+                    onPress={() => handleAccept(request)}
                     color="green"
                   />
                 </View>

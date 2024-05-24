@@ -14,6 +14,7 @@ function HomeScreen({ navigation }) {
   const [region, setRegion] = useState(null);
   const [available, setavailibility] = useState(false);
 
+  console.log(location);
   const handleAvailibility = async () => {
     try {
       const response = await axios.put(
@@ -62,7 +63,6 @@ function HomeScreen({ navigation }) {
       });
     })();
   }, []);
-  console.log(location);
 
   useEffect(() => {
     const fetchDriverStatus = async () => {
@@ -88,17 +88,17 @@ function HomeScreen({ navigation }) {
     console.log("User location changed");
     // Update the car and set it to active
     try {
-      const newLocationData = {
+      const location = {
         latitude,
         longitude,
       };
       const newLocation = await axios.put(
         `https://soberlift.onrender.com/api/updateLocation/${driverId}`,
         {
-          newLocationData,
+          location,
         }
       );
-      setLocation(newLocation);
+      setLocation(location);
     } catch (e) {
       console.error(e);
     }
@@ -109,7 +109,7 @@ function HomeScreen({ navigation }) {
       <MapView
         style={styles.map}
         initialRegion={region}
-        // onUserLocationChange={onUserLocationChange}
+        onUserLocationChange={onUserLocationChange}
         showsUserLocation={true}
       />
       <View style={styles.bottomContainer}>

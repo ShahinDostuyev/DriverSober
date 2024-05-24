@@ -133,6 +133,7 @@ function RidesScreen() {
           {rides.map((ride) => {
             return (
               <Pressable
+                key={ride.startTime}
                 onPress={() => {
                   console.log(ride.user.name);
                 }}

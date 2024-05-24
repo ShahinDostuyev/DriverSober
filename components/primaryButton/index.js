@@ -5,11 +5,17 @@ function PrimaryButton({
   onPress,
   color = Colors.primaryYellow,
   textColor = "black",
-  disabled = false
+  disabled = false,
+  width = "80%",
 }) {
   return (
     <>
-      <View style={[styles.buttonOuterContainer, { backgroundColor: color }]}>
+      <View
+        style={[
+          styles.buttonOuterContainer,
+          { backgroundColor: color, width: width },
+        ]}
+      >
         <Pressable
           style={({ pressed }) =>
             pressed
@@ -33,7 +39,7 @@ export default PrimaryButton;
 
 const styles = StyleSheet.create({
   buttonInnerContainer: {
-    flex:1,
+    flex: 1,
     paddingVertical: 8,
     paddingHorizontal: 16,
     elevation: 2,
@@ -49,9 +55,8 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "black",
     textAlign: "center",
-    fontSize:17,
-    fontWeight:"bold"
-    
+    fontSize: 17,
+    fontWeight: "bold",
   },
   pressed: {
     opacity: 0.75,
