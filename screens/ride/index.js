@@ -19,8 +19,7 @@ function RideScreen({ navigation, route }) {
   const [region, setRegion] = useState(null);
   const [rideInfo, setRideInfo] = useState(null);
   const [pickedUp, setPickedUp] = useState(false);
-  const [finished, setFinished] = useState(true);
-  console.log(rideInfo);
+  const [finished, setFinished] = useState(false);
 
   const [origin, setOrigin] = useState(request.pickupLocation);
   const [destination, setDestination] = useState(request.dropOffLocation);
@@ -89,20 +88,19 @@ function RideScreen({ navigation, route }) {
   }, []);
 
   useEffect(() => {
-    
-      const calculateDistance = () => {
-        axios
-          .get(
-            `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.latitude},${origin.longitude}&destinations=${destination.latitude},${destination.longitude}&key=AIzaSyCs4CFoDHas00xgk0CLFRxjLloQbbtzDM0`
-          )
-          .then((response) => {
-            setRideInfo(response.data.rows[0].elements[0]);
-          })
-          .catch((error) => {
-            console.error("google api error: ", error.message);
-          });
-      };
-      calculateDistance();
+    const calculateDistance = () => {
+      axios
+        .get(
+          `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.latitude},${origin.longitude}&destinations=${destination.latitude},${destination.longitude}&key=AIzaSyCs4CFoDHas00xgk0CLFRxjLloQbbtzDM0`
+        )
+        .then((response) => {
+          setRideInfo(response.data.rows[0].elements[0]);
+        })
+        .catch((error) => {
+          console.error("Google api error: ", error.message);
+        });
+    };
+    calculateDistance();
   }, []);
 
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -140,7 +138,7 @@ function RideScreen({ navigation, route }) {
       console.error("soberlift error: ", e);
     }
 
-    const threshold = 500; // Define a threshold distance in meters
+    const threshold = 100; // Define a threshold distance in meters
 
     if (!pickedUp) {
       const distanceToPickup = calculateDistance(
@@ -239,8 +237,10 @@ function RideScreen({ navigation, route }) {
             )}
             <MapViewDirections
               origin={{
-                latitude: pickedUp ? location.latitude : origin.latitude,
-                longitude: pickedUp ? location.longitude : origin.longitude,
+                latitude:
+                  pickedUp && location ? location.latitude : origin.latitude,
+                longitude:
+                  pickedUp && location ? location.longitude : origin.longitude,
               }}
               destination={{
                 latitude: destination.latitude,
@@ -317,7 +317,14 @@ function RideScreen({ navigation, route }) {
             >
               Cancel ride
             </PrimaryButton>
-            <Pressable style={styles.chat}>
+            <Pressable
+              style={styles.chat}
+              onPress={() =>
+                navigation.navigate("Chat", {
+                  ride,
+                })
+              }
+            >
               <MaterialIcons name="chat" size={40} color="black" />
             </Pressable>
           </View>

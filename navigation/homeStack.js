@@ -5,6 +5,7 @@ import ProfileScreen from "../screens/profile";
 import RequestsScreen from "../screens/requests";
 import RidesScreen from "../screens/myRides";
 import RideScreen from "../screens/ride";
+import ChatScreen from "../screens/chat";
 
 const Stack = createStackNavigator();
 
@@ -35,6 +36,11 @@ function HomeNavigator() {
         <Stack.Screen
           name="Ride"
           component={RideScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Chat"
+          component={ChatScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
