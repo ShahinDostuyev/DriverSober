@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View, Button } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  Button,
+  ActivityIndicator,
+} from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import moment from "moment/moment";
 import { ScrollView } from "react-native-gesture-handler";
@@ -11,8 +18,10 @@ function RequestsScreen({ navigation }) {
 
   const [selectedRide, setSelectedRide] = useState(null);
   const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    const createRide = () => {
+    const getRequests = () => {
       axios
         .post(`https://soberlift.onrender.com/api/nearbyrequests`, {
           driver: user,
@@ -20,13 +29,14 @@ function RequestsScreen({ navigation }) {
         .then((response) => {
           setRequests(response.data);
           console.log(requests);
+          setLoading(false);
         })
         .catch((error) => {
           console.error(error.message);
           console.log("something is wrong");
         });
     };
-    createRide();
+    getRequests();
   }, []);
 
   const handlePress = (request) => {
@@ -64,39 +74,50 @@ function RequestsScreen({ navigation }) {
   return (
     <View style={styles.rootContainer}>
       <Text style={styles.header}>Ride requests</Text>
-      <ScrollView>
-        <View style={styles.rideList}>
-          {requests.map((request, index) => (
-            <View key={index}>
-              <Pressable onPress={() => handlePress(request)}>
-                <View style={styles.rideContainer}>
-                  <View style={styles.rideLocations}>
-                    <Text style={styles.pickupLocation}>
-                      {request.pickupLocation.address}
-                    </Text>
-                    <Text style={styles.dropOffLocation}>
-                      {request.dropOffLocation.address}
-                    </Text>
-                    <Text style={styles.dateText}>
-                      {moment(request.scheduledTime).format("LLL")}
-                    </Text>
-                  </View>
-                  <Text style={[styles.priceText]}>₺{request.fare}</Text>
-                </View>
-              </Pressable>
-              {selectedRide === request && (
-                <View style={styles.buttonContainer}>
-                  <Button
-                    title="Accept"
-                    onPress={() => handleAccept(request)}
-                    color="green"
-                  />
-                </View>
-              )}
-            </View>
-          ))}
+      {loading ? (
+        <View style={styles.centeredComponent}>
+          <ActivityIndicator size="large" color="black" />
+          <Text>We are looking for nearby requests for you...</Text>
         </View>
-      </ScrollView>
+      ) : requests.length !== 0 ? (
+        <ScrollView>
+          <View style={styles.rideList}>
+            {requests.map((request, index) => (
+              <View key={index}>
+                <Pressable onPress={() => handlePress(request)}>
+                  <View style={styles.rideContainer}>
+                    <View style={styles.rideLocations}>
+                      <Text style={styles.pickupLocation}>
+                        {request.pickupLocation.address}
+                      </Text>
+                      <Text style={styles.dropOffLocation}>
+                        {request.dropOffLocation.address}
+                      </Text>
+                      <Text style={styles.dateText}>
+                        {moment(request.scheduledTime).format("LLL")}
+                      </Text>
+                    </View>
+                    <Text style={[styles.priceText]}>₺{request.fare}</Text>
+                  </View>
+                </Pressable>
+                {selectedRide === request && (
+                  <View style={styles.buttonContainer}>
+                    <Button
+                      title="Accept"
+                      onPress={() => handleAccept(request)}
+                      color="green"
+                    />
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      ) : (
+        <View style={styles.centeredComponent}>
+          <Text>No ride requests yet</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -152,5 +173,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 20,
     paddingHorizontal: 10,
+  },
+  centeredComponent: {
+    flex: 1,
+    gap: 10,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
