@@ -39,7 +39,7 @@ const ChatScreen = ({ route }) => {
               name: message.sender.name,
             },
           }));
-          setMessages(fetchedMessages);
+          setMessages(fetchedMessages.reverse());
         }
       })
       .catch((error) => {

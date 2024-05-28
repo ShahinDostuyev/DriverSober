@@ -14,6 +14,7 @@ import RateClient from "../../components/rate";
 function RideScreen({ navigation, route }) {
   const { request, ride } = route.params;
   const driverId = useSelector((state) => state.user.user._id);
+  console.log("Request: ", request);
 
   const [location, setLocation] = useState(null);
   const [region, setRegion] = useState(null);
@@ -88,8 +89,8 @@ function RideScreen({ navigation, route }) {
   }, []);
 
   useEffect(() => {
-    const calculateDistance = () => {
-      axios
+    const calculateDistance = async () => {
+      await axios
         .get(
           `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.latitude},${origin.longitude}&destinations=${destination.latitude},${destination.longitude}&key=AIzaSyCs4CFoDHas00xgk0CLFRxjLloQbbtzDM0`
         )
@@ -138,7 +139,7 @@ function RideScreen({ navigation, route }) {
       console.error("soberlift error: ", e);
     }
 
-    const threshold = 100; // Define a threshold distance in meters
+    const threshold = 200;
 
     if (!pickedUp) {
       const distanceToPickup = calculateDistance(
@@ -169,10 +170,10 @@ function RideScreen({ navigation, route }) {
     navigation.navigate("Home");
   };
 
-  const handleRatingSubmit = (rating) => {
-    axios
+  const handleRatingSubmit = async (rating) => {
+    await axios
       .post(
-        `https://soberlift.onrender.com/api/rateClient/${request.clientId}`,
+        `https://soberlift.onrender.com/api/rateClient/${request.client._id}`,
         {
           rating,
         }

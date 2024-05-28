@@ -30,7 +30,7 @@ import {
               </View>
               <View style={styles.mainText}>
                 <Text style={{ color: "white", fontSize: 35 }}>
-                  Driver of your dreams
+                  Trips of your dreams
                 </Text>
                 <Text
                   style={{

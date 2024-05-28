@@ -27,7 +27,7 @@ function RequestsScreen({ navigation }) {
           driver: user,
         })
         .then((response) => {
-          setRequests(response.data);
+          setRequests(response.data.reverse());
           console.log(requests);
           setLoading(false);
         })
